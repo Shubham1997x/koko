@@ -4,11 +4,17 @@
  */
 
 function getApiUrl() {
+  // Priority 1: User-provided config (highest priority)
   if (typeof window !== 'undefined' && window.VetChatbotConfig && window.VetChatbotConfig.apiUrl) {
     return window.VetChatbotConfig.apiUrl;
   }
-  // Default to localhost for development
-  // In production, this should be set via VetChatbotConfig.apiUrl
+  
+  // Priority 2: Environment variable (set at build time)
+  if (typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_API_URL) {
+    return process.env.VET_CHATBOT_API_URL;
+  }
+  
+  // Priority 3: Default fallback
   return 'http://localhost:3000';
 }
 

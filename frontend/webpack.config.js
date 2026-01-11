@@ -1,8 +1,15 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+require('dotenv').config();
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
+  
+  // Get API URL from environment variable or use defaults
+  // Priority: process.env.VET_CHATBOT_API_URL > default based on mode
+  const API_URL = process.env.VET_CHATBOT_API_URL || 
+    (isProduction ? 'https://koko-oe38.onrender.com' : 'http://localhost:3000');
 
   return {
     entry: './src/index.js',
@@ -36,11 +43,18 @@ module.exports = (env, argv) => {
       extensions: ['.js', '.jsx'],
     },
     plugins: [
+      // Inject environment variables
+      new webpack.DefinePlugin({
+        'process.env.VET_CHATBOT_API_URL': JSON.stringify(API_URL),
+      }),
       // Generate HTML file for both development and production
       new HtmlWebpackPlugin({
         template: './public/index.html',
         inject: 'body',
         filename: 'index.html',
+        templateParameters: {
+          apiUrl: API_URL,
+        },
       }),
     ],
     devServer: {

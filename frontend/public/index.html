@@ -33,10 +33,9 @@
     <!-- Configure the chatbot (optional) -->
     <script>
         window.VetChatbotConfig = {
-            // Update this to your backend API URL
-            // For local development: "http://localhost:3000"
-            // For production: "https://your-backend.herokuapp.com"
-            apiUrl: "http://localhost:3000",
+            // Backend API URL - Uses environment variable VET_CHATBOT_API_URL if set
+            // Can be overridden here if needed
+            // apiUrl: "<%= apiUrl %>", // Auto-injected from environment variable
             userId: "test_user_123",
             userName: "John Doe",
             petName: "Buddy",
