@@ -11,13 +11,16 @@ const corsOptions = {
       return callback(null, true);
     }
     
+    // Always allow localhost for development/testing (even in production)
+    if (/^http:\/\/localhost:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    
     // In production, allow frontend URL
     const allowedOrigins = [
       process.env.FRONTEND_URL,
       // Allow Vercel preview deployments (pattern: *.vercel.app)
       /\.vercel\.app$/,
-      // Allow localhost for development/testing
-      /^http:\/\/localhost:\d+$/,
       // Add any other allowed origins here
     ].filter(Boolean);
     
@@ -34,6 +37,9 @@ const corsOptions = {
     if (isAllowed) {
       callback(null, true);
     } else {
+      // Log for debugging
+      console.log(`CORS: Blocked origin: ${origin}`);
+      console.log(`CORS: Allowed origins: ${JSON.stringify(allowedOrigins)}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
