@@ -24,7 +24,7 @@ function getFallbackApiUrl() {
   if (typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_FALLBACK_URL) {
     return process.env.VET_CHATBOT_FALLBACK_URL;
   }
-  return 'https://koko-oe38.onrender.com';
+  return 'https://koko-h8y2.onrender.com';
 }
 
 /**

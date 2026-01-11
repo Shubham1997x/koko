@@ -9,10 +9,10 @@ module.exports = (env, argv) => {
   // Get API URL from environment variable or use defaults
   // Priority: process.env.VET_CHATBOT_API_URL > default based on mode
   const API_URL = process.env.VET_CHATBOT_API_URL || 
-    (isProduction ? 'https://koko-oe38.onrender.com' : 'http://localhost:3000');
+    (isProduction ? 'https://koko-h8y2.onrender.com' : 'http://localhost:3000');
   
   // Fallback URL (Render backend) for when local backend is not available
-  const FALLBACK_API_URL = process.env.VET_CHATBOT_FALLBACK_URL || 'https://koko-oe38.onrender.com';
+  const FALLBACK_API_URL = process.env.VET_CHATBOT_FALLBACK_URL || 'https://koko-h8y2.onrender.com';
 
   return {
     entry: './src/index.js',
