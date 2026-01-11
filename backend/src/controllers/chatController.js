@@ -1,6 +1,6 @@
 const Conversation = require('../models/Conversation');
 const { generateResponse } = require('../services/geminiService');
-const { detectAppointmentIntent, BOOKING_STATES } = require('../services/appointmentService');
+const { detectAppointmentIntent } = require('../services/appointmentService');
 
 /**
  * Handle chat message
@@ -25,6 +25,11 @@ async function handleMessage(req, res) {
         messages: [],
         context: context || {},
       });
+    } else {
+      // Update context if new context is provided
+      if (context && Object.keys(context).length > 0) {
+        conversation.context = { ...conversation.context, ...context };
+      }
     }
 
     // Add user message to conversation
@@ -46,14 +51,23 @@ async function handleMessage(req, res) {
       }));
 
       aiResponse = await generateResponse(message, conversationHistory);
-
-      // If appointment intent detected, append booking prompt
-      if (hasAppointmentIntent) {
-        aiResponse += '\n\nI can help you book an appointment! I\'ll need a few details. What is your name?';
-      }
     } catch (error) {
       console.error('Error generating AI response:', error);
-      aiResponse = 'I apologize, but I\'m having trouble processing your request right now. Please try again.';
+      
+      // Provide more helpful error messages
+      let errorMessage = 'I apologize, but I\'m having trouble processing your request right now.';
+      
+      if (error.message && error.message.includes('API key')) {
+        errorMessage = 'The AI service is not properly configured. Please contact support.';
+        console.error('Configuration error: API key issue');
+      } else if (error.message && error.message.includes('MODEL_NOT_FOUND')) {
+        errorMessage = 'The AI model is not available. Please contact support.';
+        console.error('Configuration error: Model not found');
+      } else {
+        console.error('Full error details:', JSON.stringify(error, null, 2));
+      }
+      
+      aiResponse = errorMessage + ' Please try again in a moment.';
     }
 
     // Add AI response to conversation

@@ -22,6 +22,9 @@ Guidelines:
 
 Always stay within your role as a veterinary assistant.`;
 
+// Model name from environment variable (required)
+const MODEL_NAME = process.env.GEMINI_MODEL;
+
 /**
  * Generate AI response using Google Gemini
  * @param {string} userMessage - The user's message
@@ -30,13 +33,23 @@ Always stay within your role as a veterinary assistant.`;
  */
 async function generateResponse(userMessage, conversationHistory = []) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    // Check if API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY is not configured');
+    }
+    
+    // Check if model name is configured
+    if (!MODEL_NAME) {
+      throw new Error('GEMINI_MODEL is not configured');
+    }
 
     // Build conversation context
     const history = conversationHistory.map((msg) => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],
     }));
+
+    const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
     // Start chat with system prompt and history
     const chat = model.startChat({
@@ -67,11 +80,33 @@ async function generateResponse(userMessage, conversationHistory = []) {
     return text;
   } catch (error) {
     console.error('Error generating Gemini response:', error);
-    throw new Error('Failed to generate AI response');
+    
+    // Provide more detailed error information
+    if (error.message && error.message.includes('API_KEY')) {
+      throw new Error('Gemini API key is missing or invalid. Please configure GEMINI_API_KEY in your .env file.');
+    }
+    
+    const isModelNotFound = error.message && (
+      error.message.includes('404') || 
+      error.message.includes('not found') ||
+      error.message.includes('not supported')
+    );
+    
+    if (isModelNotFound) {
+      console.error(`Model "${MODEL_NAME}" is not available. This may indicate:`);
+      console.error('1. Your API key does not have access to this model');
+      console.error('2. The model is not available in your region');
+      console.error('3. Your API key needs to be regenerated');
+      console.error('Please visit https://aistudio.google.com/app/apikey to check your API key');
+      throw new Error(`Gemini model "${MODEL_NAME}" not found or not supported. Please check your API key permissions.`);
+    }
+    
+    // Log the full error for debugging
+    console.error('Full Gemini error:', JSON.stringify(error, null, 2));
+    throw new Error(`Failed to generate AI response: ${error.message || 'Unknown error'}`);
   }
 }
 
 module.exports = {
   generateResponse,
 };
-

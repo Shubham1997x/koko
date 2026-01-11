@@ -1,18 +1,7 @@
 /**
  * Appointment Booking Service
- * Handles appointment booking state and logic
+ * Handles appointment booking logic
  */
-
-// Appointment booking states
-const BOOKING_STATES = {
-  IDLE: 'idle',
-  DETECTED_INTENT: 'detected_intent',
-  COLLECTING_OWNER_NAME: 'collecting_owner_name',
-  COLLECTING_PET_NAME: 'collecting_pet_name',
-  COLLECTING_PHONE: 'collecting_phone',
-  COLLECTING_DATE: 'collecting_date',
-  CONFIRMING: 'confirming',
-};
 
 /**
  * Detect if user wants to book an appointment
@@ -35,48 +24,6 @@ function detectAppointmentIntent(message) {
   ];
 
   return keywords.some((keyword) => lowerMessage.includes(keyword));
-}
-
-/**
- * Extract information from user message using simple patterns
- * @param {string} message - User message
- * @param {string} field - Field to extract (name, phone, date, pet)
- * @returns {string|null} - Extracted value or null
- */
-function extractField(message, field) {
-  const lowerMessage = message.toLowerCase();
-
-  if (field === 'phone') {
-    // Match phone patterns: (123) 456-7890, 123-456-7890, 1234567890, etc.
-    const phoneRegex = /[\d\s\-\(\)\+]{10,}/;
-    const match = message.match(phoneRegex);
-    if (match) {
-      // Clean and validate
-      const cleaned = match[0].replace(/\D/g, '');
-      if (cleaned.length >= 10) {
-        return match[0].trim();
-      }
-    }
-  }
-
-  if (field === 'date') {
-    // Match common date patterns
-    const datePatterns = [
-      /\d{1,2}\/\d{1,2}\/\d{2,4}/, // MM/DD/YYYY
-      /\d{1,2}-\d{1,2}-\d{2,4}/, // MM-DD-YYYY
-      /(today|tomorrow|next week|next month)/i,
-      /\d{4}-\d{2}-\d{2}/, // YYYY-MM-DD
-    ];
-
-    for (const pattern of datePatterns) {
-      const match = message.match(pattern);
-      if (match) return match[0];
-    }
-  }
-
-  // For name and pet name, we'll rely on user input in context
-  // This is a simple implementation - could be enhanced with NLP
-  return null;
 }
 
 /**
@@ -117,9 +64,7 @@ function validateAppointmentData(data) {
 }
 
 module.exports = {
-  BOOKING_STATES,
   detectAppointmentIntent,
-  extractField,
   validateAppointmentData,
 };
 
