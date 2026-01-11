@@ -1,6 +1,7 @@
 /**
  * API Service for communicating with backend
  * API URL can be configured via window.VetChatbotConfig.apiUrl
+ * Automatically falls back to Render backend if local backend is unavailable
  */
 
 function getApiUrl() {
@@ -18,6 +19,45 @@ function getApiUrl() {
   return 'http://localhost:3000';
 }
 
+function getFallbackApiUrl() {
+  // Get fallback URL from environment or use default Render URL
+  if (typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_FALLBACK_URL) {
+    return process.env.VET_CHATBOT_FALLBACK_URL;
+  }
+  return 'https://koko-oe38.onrender.com';
+}
+
+/**
+ * Try to fetch from primary URL, fallback to secondary URL if it fails
+ */
+async function fetchWithFallback(url, options, fallbackUrl) {
+  try {
+    const response = await fetch(url, options);
+    // If successful, return response
+    if (response.ok) {
+      return response;
+    }
+    // If 4xx/5xx error and we have a fallback, try fallback
+    if (fallbackUrl && url !== fallbackUrl) {
+      console.log(`Primary API (${url}) returned error, trying fallback (${fallbackUrl})...`);
+      return await fetch(fallbackUrl, options);
+    }
+    return response;
+  } catch (error) {
+    // Network error - try fallback if available
+    if (fallbackUrl && url !== fallbackUrl) {
+      console.log(`Primary API (${url}) unavailable, trying fallback (${fallbackUrl})...`);
+      try {
+        return await fetch(fallbackUrl, options);
+      } catch (fallbackError) {
+        // Both failed, throw original error
+        throw error;
+      }
+    }
+    throw error;
+  }
+}
+
 /**
  * Send chat message to backend
  * @param {string} sessionId - Session ID
@@ -27,17 +67,27 @@ function getApiUrl() {
  */
 export async function sendMessage(sessionId, message, context = {}) {
   try {
-    const response = await fetch(`${getApiUrl()}/api/chat/message`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const apiUrl = getApiUrl();
+    const fallbackUrl = getFallbackApiUrl();
+    
+    // Only use fallback if primary is localhost and different from fallback
+    const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
+    
+    const response = await fetchWithFallback(
+      `${apiUrl}/api/chat/message`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          message,
+          context,
+        }),
       },
-      body: JSON.stringify({
-        sessionId,
-        message,
-        context,
-      }),
-    });
+      useFallback ? `${fallbackUrl}/api/chat/message` : null
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -59,16 +109,26 @@ export async function sendMessage(sessionId, message, context = {}) {
  */
 export async function createAppointment(sessionId, appointmentData) {
   try {
-    const response = await fetch(`${getApiUrl()}/api/appointments`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const apiUrl = getApiUrl();
+    const fallbackUrl = getFallbackApiUrl();
+    
+    // Only use fallback if primary is localhost and different from fallback
+    const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
+    
+    const response = await fetchWithFallback(
+      `${apiUrl}/api/appointments`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId,
+          ...appointmentData,
+        }),
       },
-      body: JSON.stringify({
-        sessionId,
-        ...appointmentData,
-      }),
-    });
+      useFallback ? `${fallbackUrl}/api/appointments` : null
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -91,7 +151,22 @@ export async function createAppointment(sessionId, appointmentData) {
  */
 export async function getConversation(sessionId) {
   try {
-    const response = await fetch(`${getApiUrl()}/api/conversations/${sessionId}`);
+    const apiUrl = getApiUrl();
+    const fallbackUrl = getFallbackApiUrl();
+    
+    // Only use fallback if primary is localhost and different from fallback
+    const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
+    
+    const response = await fetchWithFallback(
+      `${apiUrl}/api/conversations/${sessionId}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+      useFallback ? `${fallbackUrl}/api/conversations/${sessionId}` : null
+    );
 
     if (!response.ok) {
       if (response.status === 404) {

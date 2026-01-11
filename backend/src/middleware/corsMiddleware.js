@@ -16,6 +16,8 @@ const corsOptions = {
       process.env.FRONTEND_URL,
       // Allow Vercel preview deployments (pattern: *.vercel.app)
       /\.vercel\.app$/,
+      // Allow localhost for development/testing
+      /^http:\/\/localhost:\d+$/,
       // Add any other allowed origins here
     ].filter(Boolean);
     
