@@ -33,6 +33,9 @@
     <!-- Configure the chatbot (optional) -->
     <script>
         window.VetChatbotConfig = {
+            // Update this to your backend API URL
+            // For local development: "http://localhost:3000"
+            // For production: "https://your-backend.herokuapp.com"
             apiUrl: "http://localhost:3000",
             userId: "test_user_123",
             userName: "John Doe",
@@ -40,7 +43,8 @@
             source: "test-page"
         };
     </script>
-    <!-- The chatbot SDK will be injected here by webpack dev server -->
+    <!-- Load the chatbot SDK -->
+    <script src="./chatbot.js"></script>
 </body>
 </html>
 

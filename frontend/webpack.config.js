@@ -36,13 +36,12 @@ module.exports = (env, argv) => {
       extensions: ['.js', '.jsx'],
     },
     plugins: [
-      // Only include HTML plugin in development for testing
-      ...(isProduction ? [] : [
-        new HtmlWebpackPlugin({
-          template: './public/index.html',
-          inject: 'body',
-        }),
-      ]),
+      // Generate HTML file for both development and production
+      new HtmlWebpackPlugin({
+        template: './public/index.html',
+        inject: 'body',
+        filename: 'index.html',
+      }),
     ],
     devServer: {
       static: {
