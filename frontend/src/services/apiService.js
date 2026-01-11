@@ -5,35 +5,53 @@
  */
 
 function getApiUrl() {
-  // Priority 1: User-provided config (highest priority)
-  if (typeof window !== 'undefined' && window.VetChatbotConfig && window.VetChatbotConfig.apiUrl) {
-    console.log('Using API URL from VetChatbotConfig:', window.VetChatbotConfig.apiUrl);
-    return window.VetChatbotConfig.apiUrl;
-  }
-  
-  // Priority 2: Environment variable (set at build time by webpack)
-  // Note: webpack DefinePlugin replaces this at build time, so it becomes a string literal
-  const envApiUrl = typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_API_URL;
-  if (envApiUrl && envApiUrl !== 'undefined' && envApiUrl !== 'null') {
-    console.log('Using API URL from environment variable:', envApiUrl);
-    return envApiUrl;
-  }
-  
-  // Priority 3: Runtime detection - check if we're in production (not localhost)
-  if (typeof window !== 'undefined' && window.location) {
-    const hostname = window.location.hostname;
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
-    
-    if (!isLocalhost) {
-      // In production (deployed on Vercel or any other domain), use Render backend
-      console.log('Detected production environment, using Render backend:', 'https://koko-h8y2.onrender.com');
-      return 'https://koko-h8y2.onrender.com';
+  try {
+    // Priority 1: User-provided config (highest priority)
+    if (typeof window !== 'undefined' && window.VetChatbotConfig && window.VetChatbotConfig.apiUrl) {
+      const url = window.VetChatbotConfig.apiUrl;
+      if (url && url !== 'undefined' && url !== 'null' && url.trim()) {
+        console.log('Using API URL from VetChatbotConfig:', url);
+        return url.trim();
+      }
     }
+    
+    // Priority 2: Runtime detection - check if we're in production (not localhost)
+    // This is more reliable than build-time variables
+    if (typeof window !== 'undefined' && window.location) {
+      const hostname = window.location.hostname;
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+      
+      if (!isLocalhost) {
+        // In production (deployed on Vercel or any other domain), use Render backend
+        const productionUrl = 'https://koko-h8y2.onrender.com';
+        console.log('Detected production environment (hostname:', hostname, '), using Render backend:', productionUrl);
+        return productionUrl;
+      }
+    }
+    
+    // Priority 3: Environment variable (set at build time by webpack)
+    // Only use if it's not localhost (to avoid build-time issues)
+    if (typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_API_URL) {
+      const envApiUrl = process.env.VET_CHATBOT_API_URL;
+      if (envApiUrl && envApiUrl !== 'undefined' && envApiUrl !== 'null' && envApiUrl.trim()) {
+        const trimmedUrl = envApiUrl.trim();
+        // Don't use localhost from env var if we're in production
+        if (!trimmedUrl.includes('localhost')) {
+          console.log('Using API URL from environment variable:', trimmedUrl);
+          return trimmedUrl;
+        }
+      }
+    }
+    
+    // Default to localhost for local development
+    const localhostUrl = 'http://localhost:3000';
+    console.log('Using default localhost API URL:', localhostUrl);
+    return localhostUrl;
+  } catch (error) {
+    console.error('Error determining API URL:', error);
+    // Fallback to Render backend if there's any error
+    return 'https://koko-h8y2.onrender.com';
   }
-  
-  // Default to localhost for local development
-  console.log('Using default localhost API URL:', 'http://localhost:3000');
-  return 'http://localhost:3000';
 }
 
 function getFallbackApiUrl() {
@@ -83,18 +101,35 @@ async function fetchWithFallback(url, options, fallbackUrl) {
  * @returns {Promise<Object>} Response from backend
  */
 export async function sendMessage(sessionId, message, context = {}) {
+  // Validate inputs
+  if (!sessionId) {
+    throw new Error('Session ID is required');
+  }
+  if (!message || !message.trim()) {
+    throw new Error('Message is required');
+  }
+
   try {
     const apiUrl = getApiUrl();
     const fallbackUrl = getFallbackApiUrl();
     
+    // Validate API URL
+    if (!apiUrl || apiUrl === 'undefined' || apiUrl === 'null') {
+      throw new Error('API URL is not configured. Please check your environment variables.');
+    }
+    
     console.log('Sending message to:', apiUrl);
     console.log('Fallback URL:', fallbackUrl);
+    console.log('Request payload:', { sessionId, message, context });
     
     // Use fallback if primary is localhost and different from fallback
     const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
     
+    const requestUrl = `${apiUrl}/api/chat/message`;
+    console.log('Making request to:', requestUrl);
+    
     const response = await fetchWithFallback(
-      `${apiUrl}/api/chat/message`,
+      requestUrl,
       {
         method: 'POST',
         headers: {
