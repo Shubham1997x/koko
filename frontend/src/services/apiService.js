@@ -15,7 +15,17 @@ function getApiUrl() {
     return process.env.VET_CHATBOT_API_URL;
   }
   
-  // Priority 3: Default fallback
+  // Priority 3: Default fallback - use Render backend for production
+  // Check if we're in a production environment (not localhost)
+  if (typeof window !== 'undefined' && window.location) {
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    if (!isLocalhost) {
+      // In production (deployed), use Render backend
+      return 'https://koko-h8y2.onrender.com';
+    }
+  }
+  
+  // Default to localhost for local development
   return 'http://localhost:3000';
 }
 
@@ -70,7 +80,7 @@ export async function sendMessage(sessionId, message, context = {}) {
     const apiUrl = getApiUrl();
     const fallbackUrl = getFallbackApiUrl();
     
-    // Only use fallback if primary is localhost and different from fallback
+    // Use fallback if primary is localhost and different from fallback
     const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
     
     const response = await fetchWithFallback(
