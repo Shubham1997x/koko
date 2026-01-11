@@ -135,6 +135,7 @@ export async function sendMessage(sessionId, message, context = {}) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include credentials for CORS
         body: JSON.stringify({
           sessionId,
           message,
@@ -189,6 +190,7 @@ export async function createAppointment(sessionId, appointmentData) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include credentials for CORS
         body: JSON.stringify({
           sessionId,
           ...appointmentData,
@@ -231,6 +233,7 @@ export async function getConversation(sessionId) {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include credentials for CORS
       },
       useFallback ? `${fallbackUrl}/api/conversations/${sessionId}` : null
     );
