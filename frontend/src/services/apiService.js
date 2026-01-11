@@ -7,25 +7,32 @@
 function getApiUrl() {
   // Priority 1: User-provided config (highest priority)
   if (typeof window !== 'undefined' && window.VetChatbotConfig && window.VetChatbotConfig.apiUrl) {
+    console.log('Using API URL from VetChatbotConfig:', window.VetChatbotConfig.apiUrl);
     return window.VetChatbotConfig.apiUrl;
   }
   
-  // Priority 2: Environment variable (set at build time)
-  if (typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_API_URL) {
-    return process.env.VET_CHATBOT_API_URL;
+  // Priority 2: Environment variable (set at build time by webpack)
+  // Note: webpack DefinePlugin replaces this at build time, so it becomes a string literal
+  const envApiUrl = typeof process !== 'undefined' && process.env && process.env.VET_CHATBOT_API_URL;
+  if (envApiUrl && envApiUrl !== 'undefined' && envApiUrl !== 'null') {
+    console.log('Using API URL from environment variable:', envApiUrl);
+    return envApiUrl;
   }
   
-  // Priority 3: Default fallback - use Render backend for production
-  // Check if we're in a production environment (not localhost)
+  // Priority 3: Runtime detection - check if we're in production (not localhost)
   if (typeof window !== 'undefined' && window.location) {
-    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const hostname = window.location.hostname;
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '';
+    
     if (!isLocalhost) {
-      // In production (deployed), use Render backend
+      // In production (deployed on Vercel or any other domain), use Render backend
+      console.log('Detected production environment, using Render backend:', 'https://koko-h8y2.onrender.com');
       return 'https://koko-h8y2.onrender.com';
     }
   }
   
   // Default to localhost for local development
+  console.log('Using default localhost API URL:', 'http://localhost:3000');
   return 'http://localhost:3000';
 }
 
@@ -80,6 +87,9 @@ export async function sendMessage(sessionId, message, context = {}) {
     const apiUrl = getApiUrl();
     const fallbackUrl = getFallbackApiUrl();
     
+    console.log('Sending message to:', apiUrl);
+    console.log('Fallback URL:', fallbackUrl);
+    
     // Use fallback if primary is localhost and different from fallback
     const useFallback = apiUrl.includes('localhost') && apiUrl !== fallbackUrl;
     
@@ -100,13 +110,25 @@ export async function sendMessage(sessionId, message, context = {}) {
     );
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to send message');
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: errorText || 'Failed to send message' };
+      }
+      console.error('API Error Response:', errorData);
+      throw new Error(errorData.error || 'Failed to send message');
     }
 
     return await response.json();
   } catch (error) {
     console.error('Error sending message:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     throw error;
   }
 }
